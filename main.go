@@ -84,9 +84,23 @@ func test_func() {
 	defer out.Flush()
 
 	var datasets int
-	fmt.Fscan(inp, &datasets)
+	fmt.Fscanln(inp, &datasets)
 
 	log.Printf("\033[35m TRYING %d DATASETS\n", datasets)
+	for range datasets {
+
+		var n, m, k int
+		fmt.Fscanln(inp, &n, &m, &k)
+
+		var arr [n][m]byte
+
+		for i = range n {
+			for j = range m {
+				fmt.Fscanf(inp, &arr[i][j])
+			}
+		}
+
+	}
 
 	fmt.Fprint(out, "")
 }
