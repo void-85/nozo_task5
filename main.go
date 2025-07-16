@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	//"task5/paper_cell"
 )
 
 const (
@@ -92,13 +93,13 @@ func test_func() {
 		var n, m, k int
 		fmt.Fscanln(inp, &n, &m, &k)
 
-		var arr [n][m]byte
+		/* var arr [n][m]byte
 
 		for i = range n {
 			for j = range m {
 				fmt.Fscanf(inp, &arr[i][j])
 			}
-		}
+		} */
 
 	}
 
