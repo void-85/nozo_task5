@@ -226,8 +226,8 @@ func test_func() {
 			y1, x1, y2, x2, ray_direction := calculate_fold_parameters(current_n, current_m, ray_from, ray_to)
 			log.Printf("     (%d;%d) ---> (%d;%d) ang==%d\n", y1, x1, y2, x2, ray_direction)
 
-			for y := range n {
-				for x := range m {
+			for y := range current_n {
+				for x := range current_m {
 					d := get_D(y1, x1, y2, x2, y, x)
 					if d > 0 {
 						//table[span_top+y][span_left+x] = 'R'
