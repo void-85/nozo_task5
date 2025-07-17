@@ -11,48 +11,52 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"task5/paper_cell"
 )
 
 const (
 	test_dir = "test"
 )
 
-func main() {
+/*
+//-------------------------------------------------------------------------------------------------
+                 (0;3)
+   1   2   3   4
+     x   x   x
+  14	       5
+     x   x   x
+  13	       6
+     x   x   x
+  12           7
+     x   x   x
+  11  10   9   8
+				 (4;3)
 
-	fmt.Printf("\n\033[33m[ STARTED ]\n")
+//-------------------------------------------------------------------------------------------------
+*/
 
-	angle, fold_param := calculate_fold_parameters(4, 3, 13, 9)
-	fmt.Printf("ang == %d param == %d", angle, fold_param)
-
-}
-
-type Ray_coords struct {
+type Ray_point struct {
 	y int
 	x int
 }
 
-func calculate_fold_parameters(height, width, ray_from, ray_to int) (ray_direction int, fold_start_shift int) {
-
-	//var return_angle int
-	//var return_fold_param int
+func calculate_fold_parameters(height, width, ray_from, ray_to int) (y1, x1, y2, x2, ray_direction int) {
 
 	total_bounding_numbers := height*2 + width*2
-	var ray_positions = make([]Ray_coords, total_bounding_numbers)
+	var ray_positions = make([]Ray_point, total_bounding_numbers)
 
 	for i := range width {
-		ray_positions[i] = Ray_coords{0, i}
+		ray_positions[i] = Ray_point{0, i}
 	}
-
 	for i := range height {
-		ray_positions[width+i] = Ray_coords{i, width}
+		ray_positions[width+i] = Ray_point{i, width}
 	}
-
 	for i := range width {
-		ray_positions[width+height+i] = Ray_coords{height, width - i}
+		ray_positions[width+height+i] = Ray_point{height, width - i}
 	}
-
 	for i := range height {
-		ray_positions[width*2+height+i] = Ray_coords{height - i, 0}
+		ray_positions[width*2+height+i] = Ray_point{height - i, 0}
 	}
 
 	//----------------------------------------------------------------------------
@@ -75,51 +79,22 @@ func calculate_fold_parameters(height, width, ray_from, ray_to int) (ray_directi
 	//----------------------------------------------------------------------------
 
 	// (y1,x1) -----> (y2,x2)
-	y1 := ray_positions[ray_from-1].y
-	x1 := ray_positions[ray_from-1].x
+	y1 = ray_positions[ray_from-1].y
+	x1 = ray_positions[ray_from-1].x
 
-	y2 := ray_positions[ray_to-1].y
-	x2 := ray_positions[ray_to-1].x
-
-	/*
-		//check for H-ray
-		if y1 == y2 {
-			if x1 < x2 {
-				ray_direction = 90
-				fold_start_shift = y1
-			} else {
-				ray_direction = 270
-				fold_start_shift = y1
-			}
-		} else
-
-		//check for V-ray
-		if x1 == x2 {
-			if y1 < y2 {
-				ray_direction = 180
-				fold_start_shift = x1
-			} else {
-				ray_direction = 360
-				fold_start_shift = x1
-			}
-		} else
-
-		//check for correct diagonal ray
-		if math.Abs(float64(x1)-float64(x2)) == math.Abs(float64(y1)-float64(y2)) {
-			ray_direction = 77
-		}
-	*/
+	y2 = ray_positions[ray_to-1].y
+	x2 = ray_positions[ray_to-1].x
 
 	ray_direction = int(math.Atan2(float64(y1-y2), float64(x1-x2))*180/3.14) - 90
 	if ray_direction <= 0 {
 		ray_direction += 360
 	}
 
-	return ray_direction, fold_start_shift
+	return y1, x1, y2, x2, ray_direction
 	//return return_angle, return_fold_param
 }
 
-func main2() {
+func main() {
 
 	fmt.Printf("\n\033[33m[ STARTED ]\n")
 
@@ -189,21 +164,283 @@ func test_func() {
 	var datasets int
 	fmt.Fscanln(inp, &datasets)
 
-	log.Printf("\033[35m TRYING %d DATASETS\n", datasets)
-	for range datasets {
+	for dataset := range datasets {
+		log.Printf("\033[32m----- TRYING %d DATASET -----\n", dataset+1)
 
 		var n, m, k int
 		fmt.Fscanln(inp, &n, &m, &k)
 
-		/* var arr [n][m]byte
+		span_top := n
+		span_left := m
 
-		for i = range n {
-			for j = range m {
-				fmt.Fscanf(inp, &arr[i][j])
+		log.Printf("\033[32mN==%d M==%d K==%d\n", n, m, k)
+
+		table := make([][]paper_cell.Quarter, n*3)
+		for i := range n * 3 {
+			table[i] = make([]paper_cell.Quarter, m*3)
+		}
+
+		var chars string
+		for y := range n {
+
+			fmt.Fscanln(inp, &chars)
+			for x := range m {
+				if chars[x] == '#' {
+					table[n+y][m+x] = 0b00001111
+
+					/* } else if chars[x] == '.' {
+					table[n+y][m+x] = 0b00000000*/
+
+				} else {
+					table[n+y][m+x] = 0b11110000
+				}
 			}
-		} */
+
+		}
+
+		var s string = ""
+		for y := range n * 3 {
+			for x := range m * 3 {
+				if table[y][x] == 0b00001111 {
+					s += "# "
+				} else if table[y][x] == 0b00000000 {
+					s += ". "
+				} else {
+					s += "_ "
+				}
+			}
+			s += "\n"
+		}
+		log.Printf("\033[32mtable loaded:\n%s\n", s)
+
+		for range k {
+			var ray_from, ray_to int
+			fmt.Fscanln(inp, &ray_from, &ray_to)
+			log.Printf("fold vector loaded: %d --> %d", ray_from, ray_to)
+
+			y1, x1, y2, x2, ray_direction := calculate_fold_parameters(n, m, ray_from, ray_to)
+			log.Printf("     (%d;%d) ---> (%d;%d) ang==%d\n", y1, x1, y2, x2, ray_direction)
+
+			for y := range n {
+				for x := range m {
+					d := get_D(y1, x1, y2, x2, y, x)
+					if d > 0 {
+						//table[span_top+y][span_left+x] = 'R'
+
+						new_y, new_x := get_mirror_point_pos(y1, x1, y2, x2, y, x)
+						table[span_top+new_y][span_left+new_x] = table[span_top+y][span_left+x]
+						table[span_top+y][span_left+x] = 0b00000000
+					} else if d < 0 {
+						//table[span_top+y][span_left+x] = 'L'
+					} else {
+						//table[span_top+y][span_left+x] = '='
+					}
+				}
+			}
+
+			//centering
+			current_span_left := 0
+			current_span_top := 0
+			current_m := 0
+			current_n := 0
+
+			//-----------------------------------------------------
+			for x := range m * 3 {
+				column_sum := 0
+				for y := range n * 3 {
+					if table[y][x] == 0b00000000 {
+						column_sum += 1
+					}
+				}
+				if column_sum == n*3 {
+					current_span_left += 1
+				} else {
+					break
+				}
+			}
+
+			for x := current_span_left; x < m*3; x++ {
+				column_sum := 0
+				for y := range n * 3 {
+					if table[y][x] == 0b00000000 {
+						column_sum += 1
+					}
+				}
+				if column_sum < n*3 {
+					current_m += 1
+				} else {
+					break
+				}
+			}
+			//-----------------------------------------------------
+
+			//-----------------------------------------------------
+			for y := range n * 3 {
+				row_sum := 0
+				for x := range m * 3 {
+					if table[y][x] == 0b00000000 {
+						row_sum += 1
+					}
+				}
+				if row_sum == m*3 {
+					current_span_top += 1
+				} else {
+					break
+				}
+			}
+
+			for y := current_span_top; y < n*3; y++ {
+				row_sum := 0
+				for x := range m * 3 {
+					if table[y][x] == 0b00000000 {
+						row_sum += 1
+					}
+				}
+				if row_sum < m*3 {
+					current_n += 1
+				} else {
+					break
+				}
+			}
+			//-----------------------------------------------------
+
+			log.Printf("empty left==%d   top==%d     new N==%d M==%d", current_span_left, current_span_top, current_n, current_m)
+
+			temp_table := make([][]paper_cell.Quarter, current_n)
+			for i := range current_n {
+				temp_table[i] = make([]paper_cell.Quarter, current_m)
+			}
+
+			for y := range current_n {
+				for x := range current_m {
+					temp_table[y][x] = table[current_span_top+y][current_span_left+x]
+					table[current_span_top+y][current_span_left+x] = 0b00000000
+				}
+			}
+
+			for y := range current_n {
+				for x := range current_m {
+					table[n+y][m+x] = temp_table[y][x]
+				}
+			}
+
+			s = ""
+			for y := range n * 3 {
+				for x := range m * 3 {
+					switch c := table[y][x]; c {
+					case 0b00001111:
+						s += "# "
+					case 0b00000000:
+						s += ". "
+					case 0b00001000:
+						s += "v "
+					case 0b00000111:
+						s += "v "
+					case 0b00000001:
+						s += "> "
+					case 0b00001110:
+						s += "> "
+					case 0b00000100:
+						s += "< "
+					case 0b00001011:
+						s += "< "
+					case 0b00000010:
+						s += "^ "
+					case 0b00001101:
+						s += "^ "
+					case 0b00001100:
+						s += "\\ "
+					case 0b00000011:
+						s += "\\ "
+					case 0b00000110:
+						s += "/ "
+					case 0b00001001:
+						s += "/ "
+					case 0b00001010:
+						s += "x "
+					case 0b00000101:
+						s += "x "
+					default:
+						s += "_ "
+					}
+				}
+				s += "\n"
+			}
+			log.Printf("\033[32mfolding passed:\n%s\n", s)
+
+			s = ""
+			for y := range current_n {
+				for x := range current_m {
+					switch c := table[n+y][m+x]; c {
+					case 0b00001111:
+						s += "#"
+					case 0b00000000:
+						s += "."
+					case 0b00001000:
+						s += "v"
+					case 0b00000111:
+						s += "v"
+					case 0b00000001:
+						s += ">"
+					case 0b00001110:
+						s += ">"
+					case 0b00000100:
+						s += "<"
+					case 0b00001011:
+						s += "<"
+					case 0b00000010:
+						s += "^"
+					case 0b00001101:
+						s += "^"
+					case 0b00001100:
+						s += "\\"
+					case 0b00000011:
+						s += "\\"
+					case 0b00000110:
+						s += "/"
+					case 0b00001001:
+						s += "/"
+					case 0b00001010:
+						s += "x"
+					case 0b00000101:
+						s += "x"
+					default:
+						s += "_"
+					}
+				}
+				s += "\n"
+			}
+			fmt.Printf("%s\n", s)
+
+		}
 
 	}
 
 	fmt.Fprint(out, "")
+}
+
+func get_D(y1, x1, y2, x2, y0, x0 int) float32 {
+
+	return float32(x2-x1)*(float32(y0)+0.5-float32(y1)) - float32(y2-y1)*(float32(x0)+0.5-float32(x1))
+}
+
+func get_mirror_point_pos(y1, x1, y2, x2, y0, x0 int) (int, int) {
+	switch {
+	case x1 == x2: // Vertical
+		return y0, 2*x1 - x0 - 1
+
+	case y1 == y2: // Horizontal
+		return 2*y1 - y0 - 1, x0
+
+	case (y2 - y1) == (x2 - x1): // Diagonal
+		dx := x1 - y1
+		return y0 + dx, x0 - dx
+
+	case (y2 - y1) == -(x2 - x1): // Diagonal
+		dx := x1 + y1
+		return -y0 + dx, -x0 + dx
+
+	default:
+		return -1, -1
+	}
 }
