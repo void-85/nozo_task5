@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-	//"task5/paper_cell"
 )
 
 const (
@@ -18,6 +18,108 @@ const (
 )
 
 func main() {
+
+	fmt.Printf("\n\033[33m[ STARTED ]\n")
+
+	angle, fold_param := calculate_fold_parameters(4, 3, 13, 9)
+	fmt.Printf("ang == %d param == %d", angle, fold_param)
+
+}
+
+type Ray_coords struct {
+	y int
+	x int
+}
+
+func calculate_fold_parameters(height, width, ray_from, ray_to int) (ray_direction int, fold_start_shift int) {
+
+	//var return_angle int
+	//var return_fold_param int
+
+	total_bounding_numbers := height*2 + width*2
+	var ray_positions = make([]Ray_coords, total_bounding_numbers)
+
+	for i := range width {
+		ray_positions[i] = Ray_coords{0, i}
+	}
+
+	for i := range height {
+		ray_positions[width+i] = Ray_coords{i, width}
+	}
+
+	for i := range width {
+		ray_positions[width+height+i] = Ray_coords{height, width - i}
+	}
+
+	for i := range height {
+		ray_positions[width*2+height+i] = Ray_coords{height - i, 0}
+	}
+
+	//----------------------------------------------------------------------------
+	// DEBUG PRINT
+	//----------------------------------------------------------------------------
+	/*for i := range total_bounding_numbers {
+
+		if ray_positions[i].x != 0 || ray_positions[i].y != 0 {
+			fmt.Printf("\033[35m")
+		} else {
+			fmt.Printf("\033[30m")
+		}
+
+		fmt.Printf("ray_pos %d == (%d ; %d)\n",
+			i+1,
+			ray_positions[i].y,
+			ray_positions[i].x,
+		)
+	} */
+	//----------------------------------------------------------------------------
+
+	// (y1,x1) -----> (y2,x2)
+	y1 := ray_positions[ray_from-1].y
+	x1 := ray_positions[ray_from-1].x
+
+	y2 := ray_positions[ray_to-1].y
+	x2 := ray_positions[ray_to-1].x
+
+	/*
+		//check for H-ray
+		if y1 == y2 {
+			if x1 < x2 {
+				ray_direction = 90
+				fold_start_shift = y1
+			} else {
+				ray_direction = 270
+				fold_start_shift = y1
+			}
+		} else
+
+		//check for V-ray
+		if x1 == x2 {
+			if y1 < y2 {
+				ray_direction = 180
+				fold_start_shift = x1
+			} else {
+				ray_direction = 360
+				fold_start_shift = x1
+			}
+		} else
+
+		//check for correct diagonal ray
+		if math.Abs(float64(x1)-float64(x2)) == math.Abs(float64(y1)-float64(y2)) {
+			ray_direction = 77
+		}
+	*/
+
+	ray_direction = int(math.Atan2(float64(y1-y2), float64(x1-x2))*180/3.14) - 90
+	if ray_direction <= 0 {
+		ray_direction += 360
+	}
+
+	return ray_direction, fold_start_shift
+	//return return_angle, return_fold_param
+}
+
+func main2() {
 
 	fmt.Printf("\n\033[33m[ STARTED ]\n")
 
