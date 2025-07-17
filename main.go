@@ -213,8 +213,8 @@ func test_func() {
 		}
 		log.Printf("\033[32mtable loaded:\n%s\n", s)
 
-		current_span_left := m
-		current_span_top := n
+		current_span_left := 0
+		current_span_top := 0
 		current_m := m
 		current_n := n
 
@@ -246,6 +246,50 @@ func test_func() {
 				}
 			}
 
+			s = ""
+			for y := range n * 3 {
+				for x := range m * 3 {
+					switch c := table[y][x]; c {
+					case 0b00001111:
+						s += "# "
+					case 0b00000000:
+						s += ". "
+					case 0b00001000:
+						s += "v "
+					case 0b00000111:
+						s += "v "
+					case 0b00000001:
+						s += "> "
+					case 0b00001110:
+						s += "> "
+					case 0b00000100:
+						s += "< "
+					case 0b00001011:
+						s += "< "
+					case 0b00000010:
+						s += "^ "
+					case 0b00001101:
+						s += "^ "
+					case 0b00001100:
+						s += "\\ "
+					case 0b00000011:
+						s += "\\ "
+					case 0b00000110:
+						s += "/ "
+					case 0b00001001:
+						s += "/ "
+					case 0b00001010:
+						s += "x "
+					case 0b00000101:
+						s += "x "
+					default:
+						s += "_ "
+					}
+				}
+				s += "\n"
+			}
+			log.Printf("\033[32mjust folded:\n%s\n", s)
+
 			//centering
 			current_span_left = 0
 			current_span_top = 0
@@ -267,19 +311,21 @@ func test_func() {
 				}
 			}
 
-			for x := current_span_left; x < m*3; x++ {
+			for x := m*3 - 1; m > 0; m-- { //current_span_left; x < m*3; x++ {
 				column_sum := 0
 				for y := range n * 3 {
 					if table[y][x] == 0b00000000 {
 						column_sum += 1
 					}
 				}
-				if column_sum < n*3 {
+				if column_sum == n*3 {
 					current_m += 1
 				} else {
 					break
 				}
 			}
+			current_m = m*3 - current_span_left - current_m
+
 			//-----------------------------------------------------
 
 			//-----------------------------------------------------
@@ -291,25 +337,30 @@ func test_func() {
 					}
 				}
 				if row_sum == m*3 {
+
 					current_span_top += 1
 				} else {
 					break
 				}
 			}
 
-			for y := current_span_top; y < n*3; y++ {
+			//log.Printf("!!!!!!!!!!!!!!!!!!!!!!!!! current_span_top ==%d", current_span_top)
+
+			for y := n*3 - 1; y > 0; y-- { //current_span_top; y < n*3; y++ {
 				row_sum := 0
 				for x := range m * 3 {
 					if table[y][x] == 0b00000000 {
 						row_sum += 1
 					}
 				}
-				if row_sum < m*3 {
+				if row_sum == m*3 {
 					current_n += 1
 				} else {
 					break
 				}
 			}
+			current_n = n*3 - current_span_top - current_n
+
 			//-----------------------------------------------------
 
 			log.Printf("empty left==%d   top==%d     new N==%d M==%d", current_span_left, current_span_top, current_n, current_m)
