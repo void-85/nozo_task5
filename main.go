@@ -311,7 +311,7 @@ func test_func() {
 				}
 			}
 
-			for x := m*3 - 1; m > 0; m-- { //current_span_left; x < m*3; x++ {
+			for x := m*3 - 1; m > 0; x-- { //current_span_left; x < m*3; x++ {
 				column_sum := 0
 				for y := range n * 3 {
 					if table[y][x] == 0b00000000 {
