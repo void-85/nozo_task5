@@ -192,7 +192,7 @@ func test_func() {
 					table[n+y][m+x] = 0b00000000*/
 
 				} else {
-					table[n+y][m+x] = 0b11110000
+					table[n+y][m+x] = 0b00000000
 				}
 			}
 
@@ -213,12 +213,17 @@ func test_func() {
 		}
 		log.Printf("\033[32mtable loaded:\n%s\n", s)
 
+		current_span_left := m
+		current_span_top := n
+		current_m := m
+		current_n := n
+
 		for range k {
 			var ray_from, ray_to int
 			fmt.Fscanln(inp, &ray_from, &ray_to)
 			log.Printf("fold vector loaded: %d --> %d", ray_from, ray_to)
 
-			y1, x1, y2, x2, ray_direction := calculate_fold_parameters(n, m, ray_from, ray_to)
+			y1, x1, y2, x2, ray_direction := calculate_fold_parameters(current_n, current_m, ray_from, ray_to)
 			log.Printf("     (%d;%d) ---> (%d;%d) ang==%d\n", y1, x1, y2, x2, ray_direction)
 
 			for y := range n {
@@ -228,7 +233,10 @@ func test_func() {
 						//table[span_top+y][span_left+x] = 'R'
 
 						new_y, new_x := get_mirror_point_pos(y1, x1, y2, x2, y, x)
-						table[span_top+new_y][span_left+new_x] = table[span_top+y][span_left+x]
+						table[span_top+new_y][span_left+new_x] =
+							table[span_top+new_y][span_left+new_x] |
+								table[span_top+y][span_left+x]
+
 						table[span_top+y][span_left+x] = 0b00000000
 					} else if d < 0 {
 						//table[span_top+y][span_left+x] = 'L'
@@ -239,10 +247,10 @@ func test_func() {
 			}
 
 			//centering
-			current_span_left := 0
-			current_span_top := 0
-			current_m := 0
-			current_n := 0
+			current_span_left = 0
+			current_span_top = 0
+			current_m = 0
+			current_n = 0
 
 			//-----------------------------------------------------
 			for x := range m * 3 {
@@ -410,13 +418,13 @@ func test_func() {
 				}
 				s += "\n"
 			}
-			fmt.Printf("%s\n", s)
+			fmt.Fprintf(out, "%s\n", s)
 
 		}
 
 	}
 
-	fmt.Fprint(out, "")
+	//fmt.Fprint(out, "")
 }
 
 func get_D(y1, x1, y2, x2, y0, x0 int) float32 {
