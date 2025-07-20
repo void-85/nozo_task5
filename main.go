@@ -39,7 +39,7 @@ type Ray_point struct {
 	x int
 }
 
-func calculate_fold_parameters(height, width, ray_from, ray_to int) (y1, x1, y2, x2, ray_direction int) {
+func calculate_fold_coordinates(height, width, ray_from, ray_to int) (y1, x1, y2, x2, ray_direction int) {
 
 	total_bounding_numbers := height*2 + width*2
 	var ray_positions = make([]Ray_point, total_bounding_numbers)
@@ -150,7 +150,7 @@ func main() {
 		expected := strings.TrimSpace(string(expectedOutput))
 
 		if actualOutput != expected {
-			fmt.Printf("\n\033[31mFAILED %s (worked %s)\nExpected:\n%s\nGot:\n%s\n", in_file, duration, expected, actualOutput)
+			fmt.Printf("\n\033[31mFAILED %s (worked %s)\nExpected:\n%s\n--------------------------------------------------------------\nGot:\n%s\n", in_file, duration, expected, actualOutput)
 		} else {
 			fmt.Printf("\033[32mPASSED %s 	(worked %s)\n", in_file, duration)
 		}
@@ -174,10 +174,19 @@ func test_func() {
 		var n, m, k int
 		fmt.Fscanln(inp, &n, &m, &k)
 
+		log.Printf("\033[32mN==%d M==%d K==%d\n", n, m, k)
+
+		initial_n := n
+		initial_m := m
+
+		if n > m {
+			m = n
+		} else {
+			n = m
+		}
+
 		span_top := n
 		span_left := m
-
-		log.Printf("\033[32mN==%d M==%d K==%d\n", n, m, k)
 
 		table := make([][]uint8, n*3)
 		for i := range n * 3 {
@@ -185,10 +194,10 @@ func test_func() {
 		}
 
 		var chars string
-		for y := range n {
+		for y := range initial_n {
 
 			fmt.Fscanln(inp, &chars)
-			for x := range m {
+			for x := range initial_m {
 				if chars[x] == '#' {
 					table[n+y][m+x] = 0b00001111
 
@@ -219,15 +228,15 @@ func test_func() {
 
 		current_span_left := 0
 		current_span_top := 0
-		current_m := m
-		current_n := n
+		current_n := initial_n
+		current_m := initial_m
 
 		for range k {
 			var ray_from, ray_to int
 			fmt.Fscanln(inp, &ray_from, &ray_to)
 			log.Printf("fold vector loaded: %d --> %d", ray_from, ray_to)
 
-			y1, x1, y2, x2, ray_direction := calculate_fold_parameters(current_n, current_m, ray_from, ray_to)
+			y1, x1, y2, x2, ray_direction := calculate_fold_coordinates(current_n, current_m, ray_from, ray_to)
 			log.Printf("     (%d;%d) ---> (%d;%d) ang==%d    (cur_n==%d cur_m==%d)\n", y1, x1, y2, x2, ray_direction, current_n, current_m)
 
 			s = ""
@@ -526,7 +535,7 @@ func Invert_at_angle(bits uint8, angle int, is_folding_edge bool) (res uint8) {
 
 	switch a := angle; a {
 
-	case 360, 180:
+	case 0, 360, 180:
 		res = (bits & 0b00000101) |
 			((bits & 0b00001000) >> 2) |
 			((bits & 0b00000010) << 2)
