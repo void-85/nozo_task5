@@ -83,6 +83,12 @@ func calculate_fold_parameters(height, width, ray_from, ray_to int) (y1, x1, y2,
 	y2 = ray_positions[ray_to-1].y
 	x2 = ray_positions[ray_to-1].x
 
+	/* 	s := ""
+	   	for i := range ray_positions {
+	   		s += fmt.Sprintf("%d(%d;%d)  ", i+1, ray_positions[i].y, ray_positions[i].x)
+	   	}
+	   	log.Printf("fold vectors : %s\n", s) */
+
 	ray_direction = int(math.Atan2(float64(y1-y2), float64(x1-x2))*180/3.14) - 90
 	if ray_direction <= 0 {
 		ray_direction += 360
@@ -222,7 +228,7 @@ func test_func() {
 			log.Printf("fold vector loaded: %d --> %d", ray_from, ray_to)
 
 			y1, x1, y2, x2, ray_direction := calculate_fold_parameters(current_n, current_m, ray_from, ray_to)
-			log.Printf("     (%d;%d) ---> (%d;%d) ang==%d\n", y1, x1, y2, x2, ray_direction)
+			log.Printf("     (%d;%d) ---> (%d;%d) ang==%d    (cur_n==%d cur_m==%d)\n", y1, x1, y2, x2, ray_direction, current_n, current_m)
 
 			s = ""
 			for y := range current_n {
@@ -230,12 +236,17 @@ func test_func() {
 
 					if table[span_top+y][span_left+x] != 0b00000000 {
 
-						d := get_D(y1, x1, y2, x2, y, x, ray_direction)
+						d := get_D(y1, x1, y2, x2, y, x)
 						if d > 0 {
 							//table[span_top+y][span_left+x] = 'R'
 
-							s += "R "
+							s += "\033[32mR "
 							new_y, new_x := get_mirror_point_pos(y1, x1, y2, x2, y, x)
+							//new_y /= 2
+							//new_x /= 2
+
+							log.Printf("mirroring (%d;%d) ---> (%d;%d)\n", y, x, new_y, new_x)
+
 							table[span_top+new_y][span_left+new_x] =
 								table[span_top+new_y][span_left+new_x] |
 									Invert_at_angle(
@@ -248,7 +259,7 @@ func test_func() {
 
 						} else if d == 0 {
 
-							s += "M "
+							s += "\033[33mM "
 							//table[span_top+y][span_left+x] = '='
 							table[span_top+y][span_left+x] =
 								Invert_at_angle(
@@ -259,7 +270,7 @@ func test_func() {
 
 						} else if d < 0 {
 							//table[span_top+y][span_left+x] = 'L'
-							s += "L "
+							s += "\033[31mL "
 						}
 
 					} else {
@@ -267,7 +278,7 @@ func test_func() {
 					}
 				}
 
-				s += "\n"
+				s += "\n\033[35m"
 			}
 			log.Printf("current working window LINE division:\n%s", s)
 
@@ -507,88 +518,6 @@ func test_func() {
 	//fmt.Fprint(out, "")
 }
 
-func get_mirror_point_pos_OLD(y1, x1, y2, x2, y0, x0 int) (int, int) {
-
-	switch {
-	case x1 == x2: // Vertical
-		log.Printf("p0(%d;%d) mirrored to p'0(%d;%d)", y0, x0, y0, 2*x1-x0-1)
-		return y0, 2*x1 - x0 - 1
-
-	case y1 == y2: // Horizontal
-		log.Printf("p0(%d;%d) mirrored to p'0(%d;%d)", y0, x0, 2*y1-y0-1, x0)
-		return 2*y1 - y0 - 1, x0
-
-	case (y2 - y1) == (x2 - x1): // Diagonal
-		dx := x1 - y1
-		log.Printf("p0(%d;%d) mirrored to p'0(%d;%d)", y0, x0, y0+dx, x0-dx)
-		return y0 + dx, x0 - dx
-
-	case (y2 - y1) == -(x2 - x1): // Diagonal
-		dx := x1 + y1
-		log.Printf("p0(%d;%d) mirrored to p'0(%d;%d)", y0, x0, -y0+dx, -x0+dx)
-		return -y0 + dx, -x0 + dx
-
-	default:
-		return -1, -1
-	}
-}
-
-func get_mirror_point_pos(y1, x1, y2, x2, y0, x0 int) (int, int) {
-	// Convert inputs to float64 for calculations
-	dy := float64(y2 - y1)
-	dx := float64(x2 - x1)
-
-	// Check line type based on direction (must be 0 or 45 degrees)
-	if dy == 0 && dx != 0 {
-		// Horizontal line: y = y1
-		// Reflection: (y0, x0) -> (2*y1 - y0, x0)
-		yPrime := 2*y1 - y0
-		xPrime := x0
-		return yPrime, xPrime
-	} else if dx == 0 && dy != 0 {
-		// Vertical line: x = x1
-		// Reflection: (y0, x0) -> (y0, 2*x1 - x0)
-		yPrime := y0
-		xPrime := 2*x1 - x0
-		return yPrime, xPrime
-	} else if math.Abs(dy) == math.Abs(dx) && dy != 0 {
-		// Diagonal line (slope = ±1, i.e., 45 degrees)
-		// For a 45-degree line, we can use a coordinate transformation or direct reflection.
-		// Method: Reflect by swapping relative coordinates based on line slope.
-
-		// Slope is +1 (y = x + c) or -1 (y = -x + c)
-		slope := dy / dx // Either +1 or -1
-		var yPrime, xPrime float64
-
-		if slope == 1 {
-			// Line y = x + c, where c = y1 - x1
-			c := float64(y1 - x1)
-			// Reflection over y = x + c: Swap x and y relative to the line
-			// Midpoint of (x0, y0) and (x', y') lies on the line
-			yPrime = float64(x0) + c
-			xPrime = float64(y0) - c
-		} else if slope == -1 {
-			// Line y = -x + c, where c = y1 + x1
-			c := float64(y1 + x1)
-			// Reflection over y = -x + c
-			yPrime = c - float64(x0)
-			xPrime = c - float64(y0)
-		} else {
-			// Should not happen given constraints
-			log.Printf("#\n#\n#\n#\n##########\nget_mirror_point_pos ERROR\n##########\n#\n#\n#\n#\n")
-			return -333, -333
-		}
-
-		// Round to nearest integer
-		return int(math.Round(yPrime)), int(math.Round(xPrime))
-	} else {
-		// Invalid line (not horizontal, vertical, or diagonal)
-		//panic("Line must be horizontal, vertical, or 45-degree diagonal")
-		log.Printf("#\n#\n#\n#\n##########\nget_mirror_point_pos ERROR\n##########\n#\n#\n#\n#\n")
-		return -333, -333
-	}
-}
-
 func Invert_at_angle(bits uint8, angle int, is_folding_edge bool) (res uint8) {
 
 	if angle < 0 {
@@ -645,21 +574,78 @@ func OLD_get_D(y1, x1, y2, x2, y0, x0 int) float32 {
 	//return float32((x2*2-x1*2)*(y0*2+0-y1*2) - (y2*2-y1*2)*(x0*2+0-x1*2))
 }
 
-func get_D(y1, x1, y2, x2, y0, x0, angle int) int {
+func get_D(y1, x1, y2, x2, y0, x0 int) int {
 
-	dx := float32(x2) - float32(x1)
-	dy := float32(y2) - float32(y1)
-	px := float32(x0) - float32(x1)
-	py := float32(y0) - float32(y1)
+	dx := (x2 * 2) - (x1 * 2)
+	dy := (y2 * 2) - (y1 * 2)
+	px := (x0*2 + 1) - (x1 * 2)
+	py := (y0*2 + 1) - (y1 * 2)
 
-	//if angle%90 == 0 {
-	px += 0.5
-	py += 0.5
-	//}
-
-	D := int(dx*py - dy*px)
+	D := (dx*py - dy*px)
 
 	//log.Printf("line: (%d;%d)--->(%d;%d)   point:(%d;%d)    D==%d", y1, x1, y2, x2, y0, x0, D)
 
 	return D
+}
+
+func main3() {
+
+	y1, x1 := 5, 0
+	y2, x2 := 0, 5
+
+	s := ""
+	sm := ""
+
+	lim := 0
+
+	for y := range 5 {
+		for x := range 5 {
+			val := get_D(y1, x1, y2, x2, y, x)
+			if val > lim {
+				s += "\033[32mR "
+				my, mx := get_mirror_point_pos(y1, x1, y2, x2, y, x)
+				sm += fmt.Sprintf("mirroring (%d;%d) ---> (%d;%d)\n", y, x, my, mx)
+			} else if val < -lim {
+				s += "\033[31mL "
+			} else {
+				s += "\033[33mM "
+			}
+			//s += fmt.Sprintf("%03d\t", get_D(y1, x1, y2, x2, y, x))
+		}
+		s += "\n"
+	}
+
+	fmt.Printf("table of get_D:\n%s\n\n%s", s, sm)
+
+}
+
+func get_mirror_point_pos(y1, x1, y2, x2, y0, x0 int) (ry, rx int) {
+
+	y1 *= 2
+	x1 *= 2
+
+	y2 *= 2
+	x2 *= 2
+
+	y0 = y0*2 + 1
+	x0 = x0*2 + 1
+
+	if y1 == y2 {
+		// Horizontal line (y = y1)
+		ry, rx = 2*y1-y0, x0
+	} else if x1 == x2 {
+		// Vertical line (x = x1)
+		ry, rx = y0, 2*x1-x0
+	} else if (x2 - x1) == (y2 - y1) {
+		// Diagonal from top-left to bottom-right: y = x + b => b = y1 - x1
+		b := y1 - x1
+		ry, rx = x0+b, y0-b
+	} else if (x2 - x1) == -(y2 - y1) {
+		// Diagonal from bottom-left to top-right: y = -x + b => b = y1 + x1
+		b := y1 + x1
+		rx, ry = b-y0, b-x0
+	}
+
+	return (ry - 1) / 2, (rx - 1) / 2
+
 }
